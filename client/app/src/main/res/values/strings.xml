@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Hexdeep</string>
+    <string name="grid_menu">切换宫格</string>
+    <string name="grid_4">4宫格展示</string>
+    <string name="grid_9">9宫格展示</string>
+    <string name="grid_16">16宫格展示</string>
+    <string name="refresh">刷新</string>
+    <string name="add_device">添加设备</string>
+    <string name="device">设备</string>
+    <string name="my">我的</string>
+    <string name="arrow_back">返回</string>
+    <string name="save_device">保存设备</string>
+    <string name="remark">备注</string>
+    <string name="remark_placeholder">请输入备注内容</string>
+    <string name="device_id_placeholder">请输入设备ID</string>
+    <string name="device_id">设备ID</string>
+</resources>

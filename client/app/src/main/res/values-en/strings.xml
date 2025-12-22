@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Hexdeep</string>
+    <string name="grid_menu">Switch Grid</string>
+    <string name="grid_4">4 Grid</string>
+    <string name="grid_9">9 Grid</string>
+    <string name="grid_16">16 Grid</string>
+    <string name="refresh">Refresh</string>
+    <string name="add_device">Add Device</string>
+    <string name="device">Device</string>
+    <string name="my">My</string>
+    <string name="arrow_back">Arrow Back</string>
+    <string name="save_device">Save Device</string>
+    <string name="remark">Remark</string>
+    <string name="remark_placeholder">Please input remark content</string>
+    <string name="device_id_placeholder">Please input device id</string>
+    <string name="device_id">Device ID</string>
+</resources>
