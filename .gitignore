@@ -33,3 +33,5 @@ google-services.json
 *.hprof
 
 ice_server/ice_server
+
+!投屏sdk/go_scrcpy_server.apk
