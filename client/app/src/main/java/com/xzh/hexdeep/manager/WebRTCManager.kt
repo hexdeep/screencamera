@@ -82,6 +82,8 @@ object WebRTCManager {
         deviceIds.forEach { deviceId ->
             createPeerConnection(deviceId)
         }
+
+        updateDevices()
     }
 
     fun getEglBaseContext(): EglBase.Context = globalEglBase.eglBaseContext
