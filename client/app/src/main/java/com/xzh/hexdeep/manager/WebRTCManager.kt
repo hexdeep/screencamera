@@ -4,6 +4,9 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Looper
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.xzh.hexdeep.App
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,19 +34,20 @@ object WebRTCManager {
         val pc: PeerConnection,
         val commandChannel: DataChannel,
         val screenShotChannel : DataChannel,
-        var thumbnail:Bitmap? = null,
-        var thumbnailWidth :Int? = null,
-        var thumbnailHeight :Int? = null,
-        var screenRecordWidth: Int? = null,       // 录制分辨率宽度
-        var screenRecordHeight: Int? = null,      // 录制分辨率高度
-        var devicePhysicalWidth: Int? = null,     // 设备物理分辨率宽度
-        var devicePhysicalHeight: Int? = null,     // 设备物理分辨率高度
-        var remoteVideoTrack: VideoTrack? = null, // 远端视频轨道
-        var remoteAudioTrack: AudioTrack? = null, // 远端音频轨道
-        var videoRenderer: SurfaceViewRenderer? = null,
         var screenshotHandler: android.os.Handler? = null,
         var screenshotRunnable: Runnable? = null
-    )
+    ){
+        var thumbnail: Bitmap? by mutableStateOf(null)
+        var thumbnailWidth: Int? by mutableStateOf(null)
+        var thumbnailHeight: Int? by mutableStateOf(null)
+        var screenRecordWidth: Int? by mutableStateOf(null)       // 录制分辨率宽度
+        var screenRecordHeight: Int? by mutableStateOf(null)      // 录制分辨率高度
+        var devicePhysicalWidth: Int? by mutableStateOf(null)     // 设备物理分辨率宽度
+        var devicePhysicalHeight: Int? by mutableStateOf(null)     // 设备物理分辨率高度
+        var remoteVideoTrack: VideoTrack? by mutableStateOf(null) // 远端视频轨道
+        var remoteAudioTrack: AudioTrack? by mutableStateOf(null) // 远端音频轨道
+        var videoRenderer: SurfaceViewRenderer? by mutableStateOf(null)
+    }
 
 
     object WebRTCConstants {
@@ -332,7 +336,6 @@ object WebRTCManager {
                 wrapper.screenRecordHeight = json.optInt("screenRecordHeight")
                 wrapper.devicePhysicalWidth = json.optInt("devicePhysicalWidth")
                 wrapper.devicePhysicalHeight = json.optInt("devicePhysicalHeight")
-                updateDevices()
 
                 println("[WebRTC] 更新 $remoteId 分辨率信息: " +
                         "screen=${wrapper.screenRecordWidth}x${wrapper.screenRecordHeight}, " +
@@ -366,20 +369,19 @@ object WebRTCManager {
         )
 
         if (bitmap != null) {
-            _devicesFlow.value = _devicesFlow.value.map {
-                if (it.id == remoteId) {
-                    it.copy(
-                        thumbnail = bitmap,
-                        thumbnailWidth = width,
-                        thumbnailHeight = height
-                    )
-                } else it
-            }
+//            _devicesFlow.value = _devicesFlow.value.map {
+//                if (it.id == remoteId) {
+//                    it.copy(
+//                        thumbnail = bitmap,
+//                        thumbnailWidth = width,
+//                        thumbnailHeight = height
+//                    )
+//                } else it
+//            }
 
-//            wrapper.thumbnail = bitmap
-//            wrapper.thumbnailWidth = width
-//            wrapper.thumbnailHeight = height
-//            updateDevices()
+            wrapper.thumbnail = bitmap
+            wrapper.thumbnailWidth = width
+            wrapper.thumbnailHeight = height
             //println("[WebRTC] 收到截图 $remoteId ${width}x${height}")
         }
     }
@@ -397,13 +399,6 @@ object WebRTCManager {
                     wrapper.remoteVideoTrack = videoTrack
                     videoTrack.setEnabled(true)
                     wrapper.videoRenderer?.let { videoTrack.addSink(it) }
-
-//                    val loggingSink = object : VideoSink {
-//                        override fun onFrame(frame: VideoFrame?) {
-//                            println("[WebRTC][VideoSink][$remoteId] 收到视频帧 } ts=${frame?.timestampNs}")
-//                        }
-//                    }
-//                    videoTrack.addSink(loggingSink)
                 }
                 "audio" -> {
                     val audioTrack = track as AudioTrack
@@ -411,8 +406,6 @@ object WebRTCManager {
                     audioTrack.setEnabled(true)
                 }
             }
-
-            updateDevices()
         }
     }
 
