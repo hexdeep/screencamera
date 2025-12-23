@@ -39,7 +39,8 @@ import com.xzh.hexdeep.store.DeviceIdStore
 fun DeviceCard(
     device: WebRTCManager.PeerConnectionWrapper,
     modifier: Modifier = Modifier,
-    onClick: (() -> Unit)? = null
+    onBodyClick: (() -> Unit)? = null,
+    onSettingClick: (() -> Unit)? = null,
 ) {
     Card(
         modifier = modifier,
@@ -50,7 +51,7 @@ fun DeviceCard(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Gray)
-                .clickable { onClick?.invoke() }
+                .clickable { onBodyClick?.invoke() }
         ) {
 
             val overlayHeight = maxHeight * 0.12f
@@ -117,7 +118,7 @@ fun DeviceCard(
                         modifier = Modifier
                             .size(iconSize)
                             .clickable {
-                                println("点击了设备 ${device.id} 的设置按钮")
+                                onSettingClick?.let { it() }
                             }
                     )
                 }

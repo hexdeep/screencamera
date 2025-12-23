@@ -156,11 +156,9 @@ fun MainScreen(navController: NavController) {
                     val devices by WebRTCManager.devicesFlow.collectAsState()
 
                     DevicePage(
+                        navController=navController,
                         devices = devices,
-                        columns = gridColumns,
-                        onDeviceClick = { device ->
-                            navController.navigate("device_full/${device.id}")
-                        }
+                        columns = gridColumns
                     )
                 }
 

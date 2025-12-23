@@ -6,14 +6,15 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.xzh.hexdeep.manager.WebRTCManager
 import com.xzh.hexdeep.widgets.DeviceCard
 
 @Composable
 fun DevicePage(
+    navController: NavController,
     devices: List<WebRTCManager.PeerConnectionWrapper>,
     columns: Int = 2,
-    onDeviceClick: (WebRTCManager.PeerConnectionWrapper) -> Unit
 ) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(columns),
@@ -37,7 +38,8 @@ fun DevicePage(
                 ) {
                     DeviceCard(
                         device,
-                        onClick = { onDeviceClick(device) }
+                        onBodyClick = { navController.navigate("device_full/${device.id}") },
+                        onSettingClick = {navController.navigate("device_setting/${device.id}")}
                     )
                 }
             }

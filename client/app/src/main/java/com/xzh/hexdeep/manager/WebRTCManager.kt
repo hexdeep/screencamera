@@ -602,20 +602,40 @@ object WebRTCManager {
         updateDevices()
     }
 
-    fun addDevice(deviceId: String) {
+    fun addDevice(remoteId: String) {
         lock.withLock {
-            if (peerConnections.containsKey(deviceId)) {
-                println("[WebRTCManager] 设备 $deviceId 已存在，不重复创建")
+            if (peerConnections.containsKey(remoteId)) {
+                println("[WebRTCManager] 设备 $remoteId 已存在，不重复创建")
                 return
             }
 
-            createPeerConnection(deviceId)
+            createPeerConnection(remoteId)
 
             // 将新设备插入列表头部
-            val newWrapper = peerConnections[deviceId]!!
-            _devicesFlow.value = listOf(newWrapper) + _devicesFlow.value.filter { it.id != deviceId }
+            val newWrapper = peerConnections[remoteId]!!
+            _devicesFlow.value = listOf(newWrapper) + _devicesFlow.value.filter { it.id != remoteId }
 
-            println("[WebRTCManager] 动态添加设备 $deviceId 到列表头部")
+            println("[WebRTCManager] 动态添加设备 $remoteId 到列表头部")
+        }
+    }
+
+    fun removeDevice(remoteId: String) {
+        lock.withLock {
+            if (!peerConnections.containsKey(remoteId)) {
+                println("[WebRTCManager] 设备 $remoteId 不存在")
+                return
+            }
+
+            // 释放连接
+            releasePeerConnection(remoteId)
+
+            // 从 peerConnections map 中移除
+            peerConnections.remove(remoteId)
+
+            // 更新设备列表 Flow
+            _devicesFlow.value = _devicesFlow.value.filter { it.id != remoteId }
+
+            println("[WebRTCManager] 移除设备 $remoteId")
         }
     }
 }

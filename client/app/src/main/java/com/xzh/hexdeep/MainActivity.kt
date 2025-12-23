@@ -10,6 +10,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.xzh.hexdeep.manager.WebRTCManager
 import com.xzh.hexdeep.pages.AddDevicePage
+import com.xzh.hexdeep.pages.DeviceSettingPage
 import com.xzh.hexdeep.pages.FullScreenVideo
 import com.xzh.hexdeep.ui.theme.HexDeepTheme
 
@@ -49,6 +50,20 @@ class MainActivity : ComponentActivity() {
                             FullScreenVideo(
                                 device = it,
                                 onExit = { navController.popBackStack() }
+                            )
+                        }
+                    }
+
+                    composable("device_setting/{deviceId}") {backStackEntry ->
+                        val deviceId = backStackEntry.arguments?.getString("deviceId") ?: return@composable
+
+                        val device = WebRTCManager.devicesFlow.collectAsState().value
+                            .find { it.id == deviceId }
+
+                        device?.let {
+                            DeviceSettingPage(
+                                deviceId = device.id,
+                                onBack = { navController.popBackStack() }
                             )
                         }
                     }
