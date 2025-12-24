@@ -1,5 +1,6 @@
 package com.xzh.hexdeep.manager
 
+import android.app.Activity
 import android.content.Context
 import android.util.Log
 import com.xzh.hexdeep.App
@@ -27,6 +28,7 @@ object CameraStreamManager {
     private var isFrontCamera = false
 
     private val globalEglBase by lazy { EglBase.create() }
+    var originalBrightness: Float? = null
 
     fun setStream(
         remoteId: String,
@@ -294,5 +296,32 @@ object CameraStreamManager {
             if (disableHost && line.contains("typ host")) return@filter false
             true
         }.joinToString("\r\n")
+    }
+
+    fun setMaxBrightness(activity: Activity?){
+        activity?.let { act ->
+            try {
+                val lp = act.window.attributes
+                // 保存原亮度
+                originalBrightness = lp.screenBrightness.takeIf { it >= 0f }
+                // 设置最大亮度
+                lp.screenBrightness = 1.0f
+                act.window.attributes = lp
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun restoreBrightness(activity: Activity?) {
+        activity?.let { act ->
+            try {
+                val lp = act.window.attributes
+                lp.screenBrightness = originalBrightness?.takeIf { it >= 0f } ?: -1f
+                act.window.attributes = lp
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 }

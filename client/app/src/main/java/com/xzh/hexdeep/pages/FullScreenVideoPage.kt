@@ -106,6 +106,7 @@ fun FullScreenVideo(
                     videoEnable = true,
                     audioEnable = false
                 )
+                CameraStreamManager.setMaxBrightness(activity)
             }
         }
 
@@ -115,6 +116,7 @@ fun FullScreenVideo(
 
         WebRTCManager.stopScreenRecord(device.id)
         CameraStreamManager.stop()
+        CameraStreamManager.restoreBrightness(activity)
         onExit()
     }
 
@@ -128,6 +130,7 @@ fun FullScreenVideo(
             CameraMicSheetContent(
                 onDisconnect = {
                     CameraStreamManager.stop()
+                    CameraStreamManager.restoreBrightness(activity)
                     scope.launch { sheetState.collapse() }
                 },
                 onConnect = {
@@ -156,6 +159,7 @@ fun FullScreenVideo(
                             videoEnable = importCamera,
                             audioEnable = importMic
                         )
+                        CameraStreamManager.setMaxBrightness(activity)
                     } else {
                         permissionLauncher.launch(needPermissions.toTypedArray())
                     }
