@@ -622,7 +622,7 @@ object WebRTCManager {
     fun removeDevice(remoteId: String) {
         lock.withLock {
             if (!peerConnections.containsKey(remoteId)) {
-                println("[WebRTCManager] 设备 $remoteId 不存在")
+                println("[WebRTCManager] 设备 $remoteId 不存在.")
                 return
             }
 
