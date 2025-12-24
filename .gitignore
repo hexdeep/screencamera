@@ -35,3 +35,6 @@ google-services.json
 ice_server/ice_server
 
 !投屏sdk/go_scrcpy_server.apk
+
+client/upload
+client/push.sh
