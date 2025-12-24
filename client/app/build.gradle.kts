@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.android)
 }
 
+val gitCommitId: String = project.findProperty("GIT_COMMIT_ID") as String? ?: "xxx"
+
 android {
     namespace = "com.xzh.hexdeep"
     compileSdk = 35
@@ -13,6 +15,7 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
+        buildConfigField("String", "GIT_COMMIT_ID", "\"$gitCommitId\"")
     }
 
     signingConfigs {
@@ -55,6 +58,7 @@ android {
 
     buildFeatures {
         compose = true   // ⭐ 启用 Compose
+        buildConfig = true
     }
 
     composeOptions {

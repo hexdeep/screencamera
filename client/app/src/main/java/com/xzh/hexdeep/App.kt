@@ -2,6 +2,7 @@ package com.xzh.hexdeep
 
 import android.app.Application
 import android.provider.Settings
+import com.xzh.hexdeep.manager.CheckForUpdateManager
 import com.xzh.hexdeep.manager.WebRTCManager
 import com.xzh.hexdeep.manager.WebsocketManager
 import com.xzh.hexdeep.store.DeviceIdStore
@@ -32,6 +33,8 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+
+        CheckForUpdateManager.checkForUpdate(this)
 
         // 全局唯一 DeviceId（与 WebSocketManager 获取方式一致）
         currentDeviceId = Settings.Secure.getString(
