@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
 }
 
-val gitCommitId: String = project.findProperty("GIT_COMMIT_ID") as String? ?: "xxx"
+val gitCommitId: String = project.findProperty("GIT_COMMIT_ID") as String? ?: ""
 
 android {
     namespace = "com.xzh.hexdeep"

@@ -22,6 +22,11 @@ object CheckForUpdateManager {
      * 检查更新
      */
     fun checkForUpdate(context: Context) {
+        // debug包不需要检测最新版本
+        if(BuildConfig.GIT_COMMIT_ID == ""){
+            return
+        }
+
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val request = Request.Builder()
