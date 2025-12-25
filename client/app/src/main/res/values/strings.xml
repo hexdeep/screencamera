@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Hexdeep</string>
+    <string name="app_name">Hex趣连</string>
     <string name="grid_menu">切换宫格</string>
     <string name="grid_4">4宫格展示</string>
     <string name="grid_9">9宫格展示</string>
