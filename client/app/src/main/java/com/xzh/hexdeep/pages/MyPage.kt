@@ -5,8 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.material.Text
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.graphicsLayer
 
 @Composable
 fun MyPage() {
@@ -15,6 +13,6 @@ fun MyPage() {
             .fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Text("这里是“我的”页面内容")
+        Text("远程接入例子展示，本示例app开源，支持H5、小程序、安卓app，获取源码请联系官方客服")
     }
 }
