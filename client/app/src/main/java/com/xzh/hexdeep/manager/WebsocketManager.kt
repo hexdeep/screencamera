@@ -97,7 +97,8 @@ object WebsocketManager {
                 }
 
                 override fun onError(ex: Exception?) {
-                    // 不主动 close，交给健康检测
+                    cleanupAfterClose()
+                    if (running) tryReconnect()
                 }
             }
 
@@ -220,21 +221,35 @@ object WebsocketManager {
         } catch (_: Exception) {}
     }
 
+    private fun signalReconnectIfNeeded() {
+        synchronized(lock) {
+            if (!running) return
+            if (closing) return
+            if (isConnecting) return
+        }
+
+        // 异步触发，避免递归 / 锁问题
+        tryReconnect()
+    }
+
     // =========================
     // 发送（串行 + 安全）
     // =========================
     fun send(msg: String): Boolean {
-        synchronized(lock) {
-            val cli = client ?: return false
-            if (closing || !cli.isOpen) return false
+        val cli: WebSocketClient
 
-            return try {
-                cli.send(msg)
-                true
-            } catch (_: Exception) {
-                safeClose()
-                false
-            }
+        synchronized(lock) {
+            if (closing) return false.also { signalReconnectIfNeeded() }
+            cli = client ?: return false.also { signalReconnectIfNeeded() }
+            if (!cli.isOpen) return false.also { signalReconnectIfNeeded() }
+        }
+
+        return try {
+            cli.send(msg)
+            true
+        } catch (_: Exception) {
+            safeClose()
+            false
         }
     }
 
