@@ -138,6 +138,7 @@ object WebsocketManager {
             val cli = synchronized(lock) { client }
             try {
                 if (cli?.isOpen == true && !closing) {
+                    println("send ping")
                     cli.sendPing()
                 }
             } catch (_: Exception) {
