@@ -57,7 +57,7 @@ object WebsocketManager {
     // =========================
     private fun connect() {
         synchronized(lock) {
-            if (!running || isConnecting || closing) return
+            if (!running || isConnecting /*|| closing*/) return
             if (client?.isOpen == true) return
             isConnecting = true
         }
@@ -116,12 +116,12 @@ object WebsocketManager {
     // =========================
     private fun tryReconnect() {
         synchronized(lock) {
-            if (!running || isConnecting || closing) return
+            if (!running || isConnecting /*|| closing*/) return
         }
 
         Timer(true).schedule(3000) {
             synchronized(lock) {
-                if (!running || isConnecting || closing) return@schedule
+                if (!running || isConnecting /*|| closing*/) return@schedule
             }
             connect()
         }
@@ -173,6 +173,7 @@ object WebsocketManager {
     // 安全关闭（只执行一次）
     // =========================
     private fun safeClose() {
+        var needReconnect = false
         synchronized(lock) {
             if (closing) return
             closing = true
@@ -186,6 +187,11 @@ object WebsocketManager {
 
             client = null
             isConnecting = false
+            needReconnect = running
+        }
+
+        if (needReconnect) {
+            tryReconnect()
         }
     }
 
