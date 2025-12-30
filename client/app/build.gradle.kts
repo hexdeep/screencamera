@@ -31,14 +31,15 @@ android {
         abi {
             isEnable = true            // 开启按架构拆分
             reset()                    // 清除默认设置
-            include("armeabi-v7a", "arm64-v8a") // 仅打包你想支持的架构
-            isUniversalApk = true     // 不生成包含所有架构的 APK
+            include("arm64-v8a")  // 仅打包你想支持的架构
+            isUniversalApk = false     // 不生成包含所有架构的 APK
         }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
