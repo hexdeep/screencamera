@@ -4,6 +4,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.collectAsState
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -12,6 +14,7 @@ import com.xzh.hexdeep.manager.WebRTCManager
 import com.xzh.hexdeep.pages.AddDevicePage
 import com.xzh.hexdeep.pages.DeviceSettingPage
 import com.xzh.hexdeep.pages.FullScreenVideo
+import com.xzh.hexdeep.pages.MainScreen
 import com.xzh.hexdeep.ui.theme.HexDeepTheme
 
 class MainActivity : ComponentActivity() {
@@ -25,7 +28,11 @@ class MainActivity : ComponentActivity() {
 
                 NavHost(
                     navController = navController,
-                    startDestination = "main"
+                    startDestination = "main",
+                    enterTransition = { EnterTransition.None },
+                    exitTransition = { ExitTransition.None },
+                    popEnterTransition = { EnterTransition.None },
+                    popExitTransition = { ExitTransition.None }
                 ) {
 
                     // 主界面：有 TopBar + BottomNavigation

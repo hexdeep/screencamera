@@ -1,5 +1,7 @@
-package com.xzh.hexdeep
+package com.xzh.hexdeep.pages
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.background
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -17,9 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.*
 import androidx.navigation.compose.rememberNavController
+import com.xzh.hexdeep.R
 import com.xzh.hexdeep.manager.WebRTCManager
-import com.xzh.hexdeep.pages.DevicePage
-import com.xzh.hexdeep.pages.MyPage
 
 @Composable
 fun MainScreen(navController: NavController) {
@@ -151,7 +152,14 @@ fun MainScreen(navController: NavController) {
         }
     ) { innerPadding ->
         Box(Modifier.padding(innerPadding)) {
-            NavHost(innerNavController, startDestination = "device") {
+            NavHost(
+                innerNavController,
+                startDestination = "device",
+                enterTransition = { EnterTransition.None },
+                exitTransition = { ExitTransition.None },
+                popEnterTransition = { EnterTransition.None },
+                popExitTransition = { ExitTransition.None }
+            ) {
                 composable("device") {
                     val devices by WebRTCManager.devicesFlow.collectAsState()
 
