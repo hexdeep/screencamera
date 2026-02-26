@@ -1,16 +1,18 @@
 package com.xzh.hexdeep.manager
 
 import android.content.Context
+import android.util.Log
 import com.xzh.hexdeep.App
+import kotlinx.coroutines.*
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
 import org.json.JSONObject
 import java.net.URI
 import java.nio.ByteBuffer
-import java.util.Timer
-import kotlin.concurrent.schedule
 
 object WebsocketManager {
+
+    private const val TAG = "WebsocketManager"
 
     // =========================
     // 状态 & 锁
@@ -27,15 +29,26 @@ object WebsocketManager {
     private var isConnecting = false
 
     @Volatile
-    private var closing = false   // ⭐ 关键：防止 send / close 并发
+    private var closing = false
 
-    private var pingTimer: Timer? = null
-    private var healthTimer: Timer? = null
+    // 协程作用域（所有定时任务统一管理）
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    private var pingJob: Job? = null
+    private var healthJob: Job? = null
+    private var reconnectJob: Job? = null
 
     private lateinit var serverUrl: String
 
     private const val HEARTBEAT_INTERVAL = 8000L
     private const val PONG_TIMEOUT = 10000L
+
+    // 指数退避参数
+    private const val RECONNECT_BASE_DELAY = 1000L   // 初始重连延迟 1s
+    private const val RECONNECT_MAX_DELAY  = 30000L  // 最大重连延迟 30s
+
+    @Volatile
+    private var reconnectAttempts = 0
 
     @Volatile
     private var lastPongTime = 0L
@@ -57,7 +70,7 @@ object WebsocketManager {
     // =========================
     private fun connect() {
         synchronized(lock) {
-            if (!running || isConnecting /*|| closing*/) return
+            if (!running || isConnecting) return
             if (client?.isOpen == true) return
             isConnecting = true
         }
@@ -72,8 +85,10 @@ object WebsocketManager {
                         client = this
                         closing = false
                         isConnecting = false
+                        reconnectAttempts = 0   // 连接成功，重置退避计数
                         lastPongTime = System.currentTimeMillis()
                     }
+                    Log.d(TAG, "WebSocket 已连接")
                     startPing()
                     startHealthCheck()
                 }
@@ -89,120 +104,148 @@ object WebsocketManager {
                     f: org.java_websocket.framing.Framedata?
                 ) {
                     lastPongTime = System.currentTimeMillis()
+                    Log.d(TAG, "收到 Pong")
                 }
 
                 override fun onClose(code: Int, reason: String?, remote: Boolean) {
+                    Log.w(TAG, "WebSocket 关闭: code=$code, reason=$reason, remote=$remote")
                     cleanupAfterClose()
-                    if (running) tryReconnect()
+                    if (running) scheduleReconnect()
                 }
 
                 override fun onError(ex: Exception?) {
+                    Log.e(TAG, "WebSocket 错误: ${ex?.message}")
                     cleanupAfterClose()
-                    if (running) tryReconnect()
+                    if (running) scheduleReconnect()
                 }
             }
 
             newClient.connect()
 
         } catch (e: Exception) {
-            synchronized(lock) {
-                isConnecting = false
-            }
-            tryReconnect()
+            Log.e(TAG, "建立连接异常: ${e.message}")
+            synchronized(lock) { isConnecting = false }
+            scheduleReconnect()
         }
     }
 
     // =========================
-    // 自动重连
+    // 指数退避重连
     // =========================
-    private fun tryReconnect() {
+    private fun scheduleReconnect() {
         synchronized(lock) {
-            if (!running || isConnecting /*|| closing*/) return
+            if (!running || isConnecting) return
+            // 取消上一个待执行的重连任务，避免重复堆积
+            reconnectJob?.cancel()
         }
 
-        Timer(true).schedule(3000) {
+        val delay = minOf(
+            RECONNECT_BASE_DELAY * (1L shl reconnectAttempts.coerceAtMost(5)),
+            RECONNECT_MAX_DELAY
+        )
+        reconnectAttempts++
+
+        Log.d(TAG, "将在 ${delay}ms 后重连（第 $reconnectAttempts 次尝试）")
+
+        reconnectJob = scope.launch {
+            delay(delay)
             synchronized(lock) {
-                if (!running || isConnecting /*|| closing*/) return@schedule
+                if (!running || isConnecting) return@launch
             }
             connect()
         }
     }
 
     // =========================
-    // Ping
+    // Ping（协程版，替代 Timer）
     // =========================
     private fun startPing() {
-        stopPing()
-        pingTimer = Timer(true)
-        pingTimer?.schedule(HEARTBEAT_INTERVAL, HEARTBEAT_INTERVAL) {
-            val cli = synchronized(lock) { client }
-            try {
-                if (cli?.isOpen == true && !closing) {
-                    println("send ping")
-                    cli.sendPing()
+        pingJob?.cancel()
+        pingJob = scope.launch {
+            while (isActive) {
+                delay(HEARTBEAT_INTERVAL)
+                val cli = synchronized(lock) { client }
+                try {
+                    if (cli?.isOpen == true && !closing) {
+                        Log.d(TAG, "发送 Ping")
+                        cli.sendPing()
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "发送 Ping 失败: ${e.message}")
+                    safeClose()
                 }
-            } catch (_: Exception) {
-                safeClose()
             }
         }
     }
 
     private fun stopPing() {
-        pingTimer?.cancel()
-        pingTimer = null
+        pingJob?.cancel()
+        pingJob = null
     }
 
     // =========================
-    // 健康检测
+    // 健康检测（协程版，替代 Timer）
     // =========================
     private fun startHealthCheck() {
-        stopHealthCheck()
-        healthTimer = Timer(true)
-        healthTimer?.schedule(3000, 3000) {
-            val timeout = System.currentTimeMillis() - lastPongTime > PONG_TIMEOUT
-            if (timeout) {
-                safeClose()
+        healthJob?.cancel()
+        healthJob = scope.launch {
+            while (isActive) {
+                delay(3000)
+                val timeout = System.currentTimeMillis() - lastPongTime > PONG_TIMEOUT
+                if (timeout) {
+                    Log.w(TAG, "Pong 超时，主动关闭并重连")
+                    safeClose()
+                }
             }
         }
     }
 
     private fun stopHealthCheck() {
-        healthTimer?.cancel()
-        healthTimer = null
+        healthJob?.cancel()
+        healthJob = null
     }
 
     // =========================
     // 安全关闭（只执行一次）
     // =========================
     private fun safeClose() {
+        val clientToClose: WebSocketClient?
         var needReconnect = false
+
+        // 先在锁内取出引用，避免长时间持锁
         synchronized(lock) {
             if (closing) return
             closing = true
-
-            stopPing()
-            stopHealthCheck()
-
-            try {
-                client?.close()
-            } catch (_: Exception) {}
-
+            clientToClose = client
             client = null
             isConnecting = false
             needReconnect = running
         }
 
+        // 在锁外停止协程任务（避免死锁）
+        stopPing()
+        stopHealthCheck()
+
+        // 在锁外关闭连接（close 可能阻塞，不应持锁）
+        try {
+            clientToClose?.close()
+        } catch (_: Exception) {}
+
         if (needReconnect) {
-            tryReconnect()
+            scheduleReconnect()
         }
     }
 
+    // onClose / onError 回调时的清理（已由底层关闭，无需再 close）
     private fun cleanupAfterClose() {
         synchronized(lock) {
             client = null
             closing = false
             isConnecting = false
         }
+        // 停止定时协程，防止旧任务继续运行
+        stopPing()
+        stopHealthCheck()
     }
 
     // =========================
@@ -219,43 +262,46 @@ object WebsocketManager {
                 type = obj.getString("message_type"),
                 content = obj.getString("content")
             )
-        } catch (_: Exception) {}
-    }
-
-    private fun signalReconnectIfNeeded() {
-        synchronized(lock) {
-            if (!running) return
-            if (closing) return
-            if (isConnecting) return
+        } catch (e: Exception) {
+            Log.e(TAG, "消息处理失败: ${e.message}")
         }
-
-        // 异步触发，避免递归 / 锁问题
-        tryReconnect()
     }
 
     // =========================
-    // 发送（串行 + 安全）
+    // 发送（线程安全）
     // =========================
     fun send(msg: String): Boolean {
         val cli: WebSocketClient
 
         synchronized(lock) {
-            if (closing) return false.also { signalReconnectIfNeeded() }
-            cli = client ?: return false.also { signalReconnectIfNeeded() }
-            if (!cli.isOpen) return false.also { signalReconnectIfNeeded() }
+            if (closing) {
+                scheduleReconnect()
+                return false
+            }
+            cli = client ?: run {
+                scheduleReconnect()
+                return false
+            }
+            if (!cli.isOpen) {
+                scheduleReconnect()
+                return false
+            }
         }
 
         return try {
             cli.send(msg)
             true
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e(TAG, "发送消息失败: ${e.message}")
             safeClose()
             false
         }
     }
 
     fun isConnected(): Boolean {
-        return client?.isOpen == true && !closing
+        synchronized(lock) {
+            return client?.isOpen == true && !closing
+        }
     }
 
     // =========================
@@ -265,6 +311,7 @@ object WebsocketManager {
         synchronized(lock) {
             running = false
         }
+        reconnectJob?.cancel()
         safeClose()
     }
 }
