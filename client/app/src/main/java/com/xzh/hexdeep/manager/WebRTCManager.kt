@@ -3,6 +3,7 @@ package com.xzh.hexdeep.manager
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.media.AudioAttributes
 import android.os.Looper
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.json.JSONArray
 import org.webrtc.*
+import org.webrtc.audio.JavaAudioDeviceModule
 import org.json.JSONObject
 import java.nio.ByteBuffer
 import java.util.concurrent.locks.ReentrantLock
@@ -96,6 +98,14 @@ object WebRTCManager {
             .createInitializationOptions()
         PeerConnectionFactory.initialize(initializationOptions)
 
+        val audioAttributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+            .build()
+        val audioDeviceModule = JavaAudioDeviceModule.builder(appContext)
+            .setAudioAttributes(audioAttributes)
+            .createAudioDeviceModule()
+
         val encoderFactory = DefaultVideoEncoderFactory(
             globalEglBase.eglBaseContext,
             true,
@@ -104,6 +114,7 @@ object WebRTCManager {
         val decoderFactory = DefaultVideoDecoderFactory(globalEglBase.eglBaseContext)
 
         return PeerConnectionFactory.builder()
+            .setAudioDeviceModule(audioDeviceModule)
             .setVideoEncoderFactory(encoderFactory)
             .setVideoDecoderFactory(decoderFactory)
             .createPeerConnectionFactory()

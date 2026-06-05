@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
+import android.media.AudioManager
 import android.view.MotionEvent
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -35,9 +36,49 @@ import com.xzh.hexdeep.manager.CameraStreamManager
 import com.xzh.hexdeep.manager.WebRTCManager
 import com.xzh.hexdeep.widgets.CameraMicSheetContent
 import com.xzh.hexdeep.widgets.IconFont
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.webrtc.SurfaceViewRenderer
 import kotlin.math.min
+
+private class MediaAudioRouteState(
+    context: Context,
+    private val activity: Activity?
+) {
+    private val audioManager =
+        context.applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    private var originalMode: Int? = null
+    private var originalSpeakerphoneOn: Boolean? = null
+    private var originalVolumeControlStream: Int? = null
+
+    fun forceMediaRoute() {
+        if (originalMode == null) {
+            originalMode = audioManager.mode
+            originalSpeakerphoneOn = audioManager.isSpeakerphoneOn
+            originalVolumeControlStream = activity?.volumeControlStream
+        }
+
+        activity?.setVolumeControlStream(AudioManager.STREAM_MUSIC)
+        audioManager.mode = AudioManager.MODE_NORMAL
+        audioManager.isSpeakerphoneOn = true
+    }
+
+    fun restore() {
+        originalVolumeControlStream?.let {
+            activity?.setVolumeControlStream(it)
+        }
+        originalSpeakerphoneOn?.let {
+            audioManager.isSpeakerphoneOn = it
+        }
+        originalMode?.let {
+            audioManager.mode = it
+        }
+
+        originalVolumeControlStream = null
+        originalSpeakerphoneOn = null
+        originalMode = null
+    }
+}
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -58,6 +99,9 @@ fun FullScreenVideo(
 
     val context = LocalContext.current
     val activity = remember { context.findActivity() }
+    val audioRouteState = remember(context, activity) {
+        MediaAudioRouteState(context, activity)
+    }
     val eglBaseContext = WebRTCManager.getEglBaseContext()
     val rightBarWidth = 30.dp
 
@@ -81,6 +125,7 @@ fun FullScreenVideo(
         onDispose {
             activity?.requestedOrientation =
                 ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            audioRouteState.restore()
         }
     }
 
@@ -117,6 +162,7 @@ fun FullScreenVideo(
         WebRTCManager.stopScreenRecord(device.id)
         CameraStreamManager.stop()
         CameraStreamManager.restoreBrightness(activity)
+        audioRouteState.restore()
         onExit()
     }
 
@@ -317,7 +363,10 @@ fun FullScreenVideo(
     }
 
     LaunchedEffect(device.id) {
+        audioRouteState.forceMediaRoute()
         WebRTCManager.startScreenRecord(device.id, enableAudio = true)
+        delay(500)
+        audioRouteState.forceMediaRoute()
     }
 
     BackHandler { exitPage() }
