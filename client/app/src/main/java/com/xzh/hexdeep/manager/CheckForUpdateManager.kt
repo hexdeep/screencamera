@@ -13,7 +13,7 @@ import okhttp3.Request
 
 object CheckForUpdateManager {
 
-    private val APK_URL = "https://download.hexdeep.com/screen_mirror/hexdeep.apk?time=${System.currentTimeMillis()}"
+    private val APK_URL = "https://download.hexdeep.com/tools/hexdeep.apk?time=${System.currentTimeMillis()}"
     private const val OSS_HEADER = "x-oss-meta-git-commit-id"
 
     private val client = OkHttpClient()
