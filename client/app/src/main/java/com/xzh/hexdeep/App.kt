@@ -36,7 +36,7 @@ class App : Application() {
 
         CheckForUpdateManager.checkForUpdate(this)
 
-        // 全局唯一 DeviceId（与 WebSocketManager 获取方式一致）
+        // 全局唯一 DeviceId（与 WebSocketManager 获取方式一致）测试修改
         currentDeviceId = Settings.Secure.getString(
             contentResolver,
             Settings.Secure.ANDROID_ID
