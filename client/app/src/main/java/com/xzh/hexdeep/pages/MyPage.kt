@@ -14,6 +14,7 @@ fun MyPage() {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
+        //
         Column(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
