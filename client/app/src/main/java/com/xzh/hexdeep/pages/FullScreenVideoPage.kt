@@ -136,6 +136,9 @@ fun FullScreenVideo(
     var rotation by remember { mutableIntStateOf(0) }      // 0, 90, 180, 270
     var mirror by remember { mutableStateOf(false) }     // 是否镜像
 
+    var importCamera by remember { mutableStateOf(true) }
+    var importMic by remember { mutableStateOf(false) }
+
     val permissionLauncher =
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -144,14 +147,20 @@ fun FullScreenVideo(
             val cameraGranted = result[Manifest.permission.CAMERA] == true
             val audioGranted = result[Manifest.permission.RECORD_AUDIO] == true
 
-            if (cameraGranted) {
+            val canUseCamera = importCamera && cameraGranted
+            val canUseMic = importMic && audioGranted
+
+            if (canUseCamera || canUseMic) {
                 CameraStreamManager.setStream(
                     device.id,
                     context,
-                    videoEnable = true,
-                    audioEnable = false
+                    videoEnable = canUseCamera,
+                    audioEnable = canUseMic
                 )
-                CameraStreamManager.setMaxBrightness(activity)
+
+                if (canUseCamera) {
+                    CameraStreamManager.setMaxBrightness(activity)
+                }
             }
         }
 
@@ -165,9 +174,6 @@ fun FullScreenVideo(
         audioRouteState.restore()
         onExit()
     }
-
-    var importCamera by remember { mutableStateOf(true) }
-    var importMic by remember { mutableStateOf(false) }
 
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
@@ -205,7 +211,9 @@ fun FullScreenVideo(
                             videoEnable = importCamera,
                             audioEnable = importMic
                         )
-                        CameraStreamManager.setMaxBrightness(activity)
+                        if(importCamera){
+                            CameraStreamManager.setMaxBrightness(activity)
+                        }
                     } else {
                         permissionLauncher.launch(needPermissions.toTypedArray())
                     }

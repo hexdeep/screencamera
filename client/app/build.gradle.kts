@@ -3,7 +3,15 @@ plugins {
     alias(libs.plugins.kotlin.android)
 }
 
-val gitCommitId: String = project.findProperty("GIT_COMMIT_ID") as String? ?: ""
+val gitCommitId = if (gradle.startParameter.taskNames.any { it.contains("Release") }) {
+    providers.gradleProperty("gitCommitId").orElse(
+        providers.exec {
+            commandLine("git", "rev-parse", "--short", "HEAD")
+        }.standardOutput.asText.map { it.trim() }
+    ).get()
+} else {
+    ""
+}
 
 android {
     namespace = "com.xzh.hexdeep"
@@ -14,7 +22,7 @@ android {
         minSdk = 29
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0"
+        versionName = "$gitCommitId"
         buildConfigField("String", "GIT_COMMIT_ID", "\"$gitCommitId\"")
     }
 
